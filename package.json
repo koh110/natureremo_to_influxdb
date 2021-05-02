@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "scripts": {
+    "start": "export $(cat .env | xargs) && node index.js"
+  },
+  "dependencies": {
+    "@influxdata/influxdb-client": "^1.13.0",
+    "axios": "^0.21.1"
+  }
+}
