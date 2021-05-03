@@ -11,6 +11,7 @@ const influxDB = new InfluxDB({ url: INFLUXDB_URL, token: INFLUXDB_TOKEN })
 const writeApi = influxDB.getWriteApi(INFLUXDB_ORG, INFLUXDB_BUCKET)
 
 const main = async () => {
+  console.time('remo')
   const res = await axios({
     method: 'GET',
     url: 'https://api.nature.global/1/devices',
@@ -22,30 +23,22 @@ const main = async () => {
 
   const remo = res.data[0]
 
-  const events = [
-    // 温度
-    { field: 'temperature', data: remo.newest_events.te },
-    // 湿度
-    { field: 'humidity', data: remo.newest_events.hu },
-    // 照度
-    { field: 'illumination', data: remo.newest_events.il },
-    // 人感センサー
-    { field: 'movement', data: remo.newest_events.mo }
-  ]
+  // eventsは一定以上変化しないとデータを送っていないっぽい
+  // なのでtimestampにnew Date(created_at)するとデータがまるめられてしまう
 
-  const points = events.map((event) => {
-    const point = new Point('natureRemo')
-      .floatField(event.field, event.data.val)
-      .timestamp(new Date(event.data.created_at))
-    return point
-  })
-  console.log(points)
+  const point = new Point('natureRemo')
+    .floatField('temperature', remo.newest_events.te.val) // 温度
+    .floatField('humidity', remo.newest_events.hu.val) // 湿度
+    .floatField('illumination', remo.newest_events.il.val) // 照度
+    .floatField('movement', remo.newest_events.mo.val) // 人感センサー
 
-  writeApi.writePoints(points)
+
+  writeApi.writePoint(point)
 
   await shutdown()
   
-  console.log('done')
+  console.timeEnd('remo')
+  console.log('done:', new Date())
 }
 
 const shutdown = async () => {
